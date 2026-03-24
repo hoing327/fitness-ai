@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>피트니스 AI 코치</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0d0d; --surface: #1a1a1a; --surface2: #242424;
+  --accent: #c8f542; --accent-dark: #a8d422;
+  --text: #f0ede8; --muted: #777; --border: #2e2e2e;
+}
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+header { display:flex; align-items:center; gap:12px; padding:13px 18px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.logo { width:36px; height:36px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.logo svg { width:20px; height:20px; }
+.hinfo h1 { font-size:16px; font-weight:700; }
+.hinfo p { font-size:11px; color:var(--muted); margin-top:1px; font-weight:300; }
+.online { margin-left:auto; display:flex; align-items:center; gap:5px; font-size:11px; color:var(--accent); }
+.odot { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.chips { display:flex; gap:7px; padding:10px 16px; overflow-x:auto; border-bottom:1px solid var(--border); flex-shrink:0; scrollbar-width:none; }
+.chips::-webkit-scrollbar { display:none; }
+.chip { display:inline-flex; align-items:center; gap:4px; padding:5px 13px; background:var(--surface); border:1px solid var(--border); border-radius:99px; font-size:12px; font-weight:500; white-space:nowrap; cursor:pointer; color:var(--text); font-family:'Noto Sans KR',sans-serif; transition:all 0.15s; flex-shrink:0; }
+.chip:hover { border-color:var(--accent); color:var(--accent); background:var(--surface2); }
+.chat { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.chat::-webkit-scrollbar { width:3px; }
+.chat::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+.welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; text-align:center; gap:10px; padding:20px; min-height:300px; }
+.w-icon { width:56px; height:56px; background:var(--accent); border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
+.w-icon svg { width:30px; height:30px; }
+.welcome h2 { font-size:19px; font-weight:700; line-height:1.3; }
+.welcome p { font-size:13px; color:var(--muted); max-width:280px; line-height:1.65; font-weight:300; }
+.fgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:310px; margin-top:8px; }
+.fcard { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 11px; text-align:left; cursor:pointer; transition:all 0.15s; }
+.fcard:hover { border-color:var(--accent); background:var(--surface2); }
+.ficon { font-size:18px; margin-bottom:4px; }
+.ftitle { font-size:12px; font-weight:500; color:var(--text); }
+.fdesc { font-size:10.5px; color:var(--muted); margin-top:2px; line-height:1.4; }
+.msg { display:flex; gap:9px; animation:si 0.2s ease-out; }
+@keyframes si { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.msg.user { flex-direction:row-reverse; }
+.av { width:30px; height:30px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; margin-top:1px; }
+.av.ai { background:var(--accent); color:#0d0d0d; }
+.av.me { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
+.bubble { max-width:80%; padding:9px 13px; border-radius:13px; font-size:13.5px; line-height:1.65; font-family:'Noto Sans KR',sans-serif; }
+.msg.ai .bubble { background:var(--surface); border:1px solid var(--border); border-top-left-radius:3px; }
+.msg.user .bubble { background:var(--accent); color:#0d0d0d; font-weight:500; border-top-right-radius:3px; }
+.bubble a { color:var(--accent); text-decoration:underline; text-decoration-style:dotted; word-break:break-all; }
+.msg.user .bubble a { color:#0d0d0d; }
+.bubble strong { font-weight:600; }
+.bubble p { margin-bottom:5px; }
+.bubble p:last-child { margin-bottom:0; }
+.bubble ul { padding-left:16px; margin:4px 0; }
+.bubble li { margin-bottom:3px; }
+.tdots { display:flex; align-items:center; gap:4px; padding:11px 14px; }
+.tdot { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:bounce 1.2s ease-in-out infinite; }
+.tdot:nth-child(2){animation-delay:0.2s} .tdot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:0.35} 40%{transform:translateY(-6px);opacity:1} }
+.input-wrap { padding:11px 15px 14px; border-top:1px solid var(--border); flex-shrink:0; }
+.irow { display:flex; gap:8px; align-items:flex-end; }
+textarea { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:9px 13px; color:var(--text); font-family:'Noto Sans KR',sans-serif; font-size:13.5px; resize:none; outline:none; min-height:42px; max-height:120px; line-height:1.5; transition:border-color 0.15s; }
+textarea::placeholder { color:var(--muted); }
+textarea:focus { border-color:var(--accent); }
+.sbtn { width:42px; height:42px; background:var(--accent); border:none; border-radius:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
+.sbtn:hover { background:var(--accent-dark); transform:scale(1.05); }
+.sbtn:active { transform:scale(0.96); }
+.sbtn:disabled { background:var(--surface2); cursor:not-allowed; transform:none; }
+.sbtn svg { width:17px; height:17px; color:#0d0d0d; }
+.hint { font-size:10.5px; color:var(--muted); margin-top:6px; text-align:center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+      <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+    </svg>
+  </div>
+  <div class="hinfo">
+    <h1>피트니스 AI 코치</h1>
+    <p>Claude 기반 · 운동 · 식단 · 건강 상담</p>
+  </div>
+  <div class="online"><div class="odot"></div>온라인</div>
+</header>
+<div class="chips">
+  <div class="chip" onclick="ask('스쿼트 올바른 자세 알려줘')">🏋️ 스쿼트 자세</div>
+  <div class="chip" onclick="ask('7일 초보자 운동 플랜 짜줘')">📅 주간 플랜</div>
+  <div class="chip" onclick="ask('운동 전후 식사 타이밍 알려줘')">🥗 식사 타이밍</div>
+  <div class="chip" onclick="ask('하루 단백질 섭취량 얼마나 필요해?')">💊 단백질 섭취</div>
+  <div class="chip" onclick="ask('체지방 줄이면서 근육 유지하는 법')">🔥 체지방 감소</div>
+  <div class="chip" onclick="ask('데드리프트 튜토리얼 영상 링크 알려줘')">▶️ 운동 영상</div>
+  <div class="chip" onclick="ask('오늘 운동 추천해줘')">⚡ 오늘의 운동</div>
+</div>
+<div class="chat" id="chatBox">
+  <div class="welcome" id="welcome">
+    <div class="w-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+        <line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+      </svg>
+    </div>
+    <h2>안녕하세요! 👋<br>무엇이든 물어보세요</h2>
+    <p>운동 자세부터 식단 관리, 건강 고민까지<br>Claude AI가 바로 답해드려요.</p>
+    <div class="fgrid">
+      <div class="fcard" onclick="ask('데드리프트 YouTube 튜토리얼 링크 알려줘')"><div class="ficon">🎥</div><div class="ftitle">운동 영상</div><div class="fdesc">튜토리얼 링크 제공</div></div>
+      <div class="fcard" onclick="ask('벤치프레스 올바른 자세 알려줘')"><div class="ficon">🏋️</div><div class="ftitle">운동 Q&A</div><div class="fdesc">자세 교정 & 프로그램</div></div>
+      <div class="fcard" onclick="ask('근육 증가를 위한 주간 식단 플랜 만들어줘')"><div class="ficon">🥗</div><div class="ftitle">식단 코칭</div><div class="fdesc">맞춤 영양 가이드</div></div>
+      <div class="fcard" onclick="ask('운동 후 근육통 빨리 회복하는 방법')"><div class="ficon">💤</div><div class="ftitle">회복 & 건강</div><div class="fdesc">부상 예방 & 컨디션</div></div>
+    </div>
+  </div>
+</div>
+<div class="input-wrap">
+  <div class="irow">
+    <textarea id="msgInput" placeholder="운동, 식단, 건강에 대해 무엇이든 물어보세요..." rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+    <button class="sbtn" id="sendBtn" onclick="send()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+  <div class="hint">피트니스 AI · Claude 기반 · Enter로 전송 · Shift+Enter 줄바꿈</div>
+</div>
+<script>
+let history = [], busy = false;
+function ask(t) { document.getElementById('msgInput').value=t; send(); }
+function removeWelcome() { const w=document.getElementById('welcome'); if(w)w.remove(); }
+function appendMsg(role, html) {
+  removeWelcome();
+  const box=document.getElementById('chatBox');
+  const wrap=document.createElement('div'); wrap.className='msg '+role;
+  const av=document.createElement('div'); av.className='av '+(role==='user'?'me':'ai'); av.textContent=role==='user'?'나':'AI';
+  const bub=document.createElement('div'); bub.className='bubble';
+  if(role==='ai'){bub.innerHTML=md(html);}else{bub.textContent=html;}
+  wrap.appendChild(av); wrap.appendChild(bub); box.appendChild(wrap); box.scrollTop=box.scrollHeight;
+}
+function showTyping() {
+  removeWelcome();
+  const box=document.getElementById('chatBox');
+  const wrap=document.createElement('div'); wrap.className='msg ai'; wrap.id='typing';
+  const av=document.createElement('div'); av.className='av ai'; av.textContent='AI';
+  const bub=document.createElement('div'); bub.className='bubble';
+  bub.innerHTML='<div class="tdots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+  wrap.appendChild(av); wrap.appendChild(bub); box.appendChild(wrap); box.scrollTop=box.scrollHeight;
+}
+function hideTyping() { const t=document.getElementById('typing'); if(t)t.remove(); }
+function md(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/^### (.+)$/gm,'<strong style="display:block;font-size:13px;margin:8px 0 3px;">$1</strong>')
+    .replace(/^## (.+)$/gm,'<strong style="display:block;font-size:14px;margin:10px 0 4px;">$1</strong>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)+/g,m=>'<ul style="padding-left:16px;margin:4px 0">'+m+'</ul>')
+    .replace(/\n\n/g,'</p><p style="margin-bottom:5px">').replace(/\n/g,'<br>')
+    .replace(/^/,'<p style="margin-bottom:5px">').replace(/$/,'</p>');
+}
+async function send() {
+  if(busy) return;
+  const inp=document.getElementById('msgInput');
+  const text=inp.value.trim(); if(!text) return;
+  inp.value=''; inp.style.height='auto';
+  busy=true; document.getElementById('sendBtn').disabled=true;
+  appendMsg('user',text);
+  history.push({role:'user',content:text});
+  showTyping();
+  try {
+    const res=await fetch('/.netlify/functions/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:history})
+    });
+    const data=await res.json(); hideTyping();
+    if(data.error){
+      appendMsg('ai','⚠️ <strong>오류:</strong> '+data.error);
+    } else {
+      history.push({role:'assistant',content:data.reply});
+      appendMsg('ai',data.reply);
+    }
+  } catch(e) {
+    hideTyping();
+    appendMsg('ai','⚠️ <strong>연결 오류</strong><br>잠시 후 다시 시도해 주세요.');
+  }
+  busy=false; document.getElementById('sendBtn').disabled=false; inp.focus();
+}
+</script>
+</body>
+</html>
