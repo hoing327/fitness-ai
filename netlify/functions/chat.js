@@ -5,18 +5,14 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json; charset=utf-8'
   };
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
 
-  const SYSTEM = `당신은 운동 과학, 근력 트레이닝, 영양학, 건강 관리에 특화된 전문 피트니스 AI 코치입니다.
-모든 답변은 반드시 한국어로 작성하세요.
-운동 동작 질문 시 YouTube 링크 2~3개 제공: [▶ 영상 보기: {운동명}](https://www.youtube.com/results?search_query={운동명+자세+튜토리얼})
-마크다운(**굵게**, - 불릿) 형식으로 간결하고 핵심적인 답변을 제공하세요.
-초보자 질문에는 안전 주의사항을 강조하세요.`;
+  const SYSTEM = '당신은 운동 과학, 근력 트레이닝, 영양학, 건강 관리에 특화된 전문 피트니스 AI 코치입니다. 모든 답변은 반드시 한국어로 작성하세요. 운동 동작 질문 시 YouTube 링크 2~3개 제공: [영상 보기: {운동명}](https://www.youtube.com/results?search_query={운동명+자세+튜토리얼}). 마크다운(**굵게**, - 불릿) 형식으로 간결하고 핵심적인 답변을 제공하세요. 초보자 질문에는 안전 주의사항을 강조하세요.';
 
   return new Promise((resolve) => {
     try {
@@ -38,15 +34,16 @@ exports.handler = async (event) => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Length': Buffer.byteLength(body)
+          'Content-Length': Buffer.byteLength(body, 'utf8')
         }
       };
 
       const req = https.request(options, (res) => {
-        let data = '';
-        res.on('data', chunk => data += chunk);
+        const chunks = [];
+        res.on('data', chunk => chunks.push(chunk));
         res.on('end', () => {
           try {
+            const data = Buffer.concat(chunks).toString('utf8');
             const parsed = JSON.parse(data);
             if (parsed.error) {
               resolve({ statusCode: 400, headers, body: JSON.stringify({ error: parsed.error.message }) });
