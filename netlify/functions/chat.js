@@ -14,27 +14,32 @@ exports.handler = async (event) => {
 
   const SYSTEM = `당신은 운동 과학, 근력 트레이닝, 영양학, 건강 관리에 특화된 전문 피트니스 AI 코치입니다.
 모든 답변은 반드시 한국어로 작성하세요.
-운동 동작 질문 시 YouTube 링크 2~3개 제공: [▶ 영상 보기](https://www.youtube.com/results?search_query={운동명+자세+튜토리얼})
-마크다운 형식으로 간결하고 핵심적인 답변을 제공하세요.`;
+운동 동작 질문 시 YouTube 링크 2~3개 제공: [▶ 영상 보기: {운동명}](https://www.youtube.com/results?search_query={운동명+자세+튜토리얼})
+마크다운(**굵게**, - 불릿) 형식으로 간결하고 핵심적인 답변을 제공하세요.
+초보자 질문에는 안전 주의사항을 강조하세요.`;
 
   return new Promise((resolve) => {
     try {
       const { messages } = JSON.parse(event.body);
+
+      const geminiMessages = messages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+
       const body = JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: SYSTEM,
-        messages
+        system_instruction: { parts: [{ text: SYSTEM }] },
+        contents: geminiMessages,
+        generationConfig: { maxOutputTokens: 1000 }
       });
 
+      const apiKey = process.env.GEMINI_API_KEY;
       const options = {
-        hostname: 'api.anthropic.com',
-        path: '/v1/messages',
+        hostname: 'generativelanguage.googleapis.com',
+        path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
           'Content-Length': Buffer.byteLength(body)
         }
       };
@@ -48,7 +53,7 @@ exports.handler = async (event) => {
             if (parsed.error) {
               resolve({ statusCode: 400, headers, body: JSON.stringify({ error: parsed.error.message }) });
             } else {
-              const reply = parsed.content?.[0]?.text || '응답을 생성하지 못했습니다.';
+              const reply = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 생성하지 못했습니다.';
               resolve({ statusCode: 200, headers, body: JSON.stringify({ reply }) });
             }
           } catch(e) {
