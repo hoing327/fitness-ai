@@ -22,24 +22,22 @@ exports.handler = async (event) => {
     try {
       const { messages } = JSON.parse(event.body);
 
-      const geminiMessages = messages.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
-
       const body = JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM }] },
-        contents: geminiMessages,
-        generationConfig: { maxOutputTokens: 1000 }
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: SYSTEM },
+          ...messages
+        ],
+        max_tokens: 1000
       });
 
-      const apiKey = process.env.GEMINI_API_KEY;
       const options = {
-        hostname: 'generativelanguage.googleapis.com',
-        path: `/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        hostname: 'api.groq.com',
+        path: '/openai/v1/chat/completions',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Length': Buffer.byteLength(body)
         }
       };
@@ -53,7 +51,7 @@ exports.handler = async (event) => {
             if (parsed.error) {
               resolve({ statusCode: 400, headers, body: JSON.stringify({ error: parsed.error.message }) });
             } else {
-              const reply = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 생성하지 못했습니다.';
+              const reply = parsed.choices?.[0]?.message?.content || '응답을 생성하지 못했습니다.';
               resolve({ statusCode: 200, headers, body: JSON.stringify({ reply }) });
             }
           } catch(e) {
